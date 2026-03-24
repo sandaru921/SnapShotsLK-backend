@@ -23,17 +23,17 @@ namespace SnapShotsLK.API.Controllers
             _configuration = configuration;
         }
 
-        // 1. REGISTER (ලියාපදිංචි වීම)
+        
         [HttpPost("register")]
         public IActionResult Register(UserRegisterDto request)
         {
-            // Email එක කලින් තියෙනවද බලනවා
+         
             if (_context.Users.Any(u => u.Email == request.Email))
             {
                 return BadRequest("User already exists.");
             }
 
-            // Password එක Hash කරනවා (ආරක්ෂිත කරනවා)
+            
             string passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
             var newUser = new User
@@ -49,30 +49,30 @@ namespace SnapShotsLK.API.Controllers
             return Ok("User Registered Successfully!");
         }
 
-        // 2. LOGIN (ඇතුල් වීම)
+        
         [HttpPost("login")]
         public IActionResult Login(UserLoginDto request)
         {
-            // User ව Database එකෙන් හොයනවා
+           
             var user = _context.Users.FirstOrDefault(u => u.Email == request.Email);
             if (user == null)
             {
                 return BadRequest("User not found.");
             }
 
-            // Password එක ගැලපෙනවද බලනවා
+           
             if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             {
                 return BadRequest("Wrong password.");
             }
 
-            // හරි නම් Token එකක් හදනවා
+            
             string token = CreateToken(user);
 
             return Ok(token);
         }
 
-        // මේකෙන් තමයි Token එක හදන්නේ (Private Method)
+        
         private string CreateToken(User user)
         {
             List<Claim> claims = new List<Claim>
