@@ -49,6 +49,48 @@ namespace SnapShotsLK.API.Controllers
             return Ok("User Registered Successfully!");
         }
 
+        [HttpPost("register-professional")]
+        public IActionResult RegisterProfessional(RegisterProfessionalDto request)
+        {
+            if (_context.Users.Any(u => u.Email == request.Email))
+            {
+                return BadRequest(new { message = "User already exists with this email." });
+            }
+
+            string passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+
+            var newUser = new User
+            {
+                Name = request.Name,
+                Email = request.Email,
+                Phone = request.Phone,
+                Location = request.Location,
+                PasswordHash = passwordHash,
+                Role = string.IsNullOrEmpty(request.Role) ? "admin" : request.Role,
+                ServiceType = request.ServiceType,
+                BusinessName = request.BusinessName
+            };
+
+            _context.Users.Add(newUser);
+            _context.SaveChanges();
+
+            string token = CreateToken(newUser);
+
+            return Ok(new
+            {
+                token = token,
+                user = new
+                {
+                    id = newUser.UserId,
+                    name = newUser.Name,
+                    email = newUser.Email,
+                    role = newUser.Role,
+                    phone = newUser.Phone,
+                    location = newUser.Location
+                }
+            });
+        }
+
         
         [HttpPost("login")]
         public IActionResult Login(UserLoginDto request)

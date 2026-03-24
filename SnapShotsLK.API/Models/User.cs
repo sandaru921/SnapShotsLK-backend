@@ -16,5 +16,12 @@ namespace SnapShotsLK.API.Models
        
 
         public string Role { get; set; } = "Client"; // Default role is Client
+
+        // Professional fields
+        public string? Name { get; set; }
+        public string? Phone { get; set; }
+        public string? Location { get; set; }
+        public string? ServiceType { get; set; }
+        public string? BusinessName { get; set; }
     }
 }
