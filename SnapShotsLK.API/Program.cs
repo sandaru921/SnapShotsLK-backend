@@ -1,49 +1,66 @@
 using Microsoft.EntityFrameworkCore;
 using SnapShotsLK.API.Data;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- 1. Add Services (Services එකතු කිරීම) ---
-
-// 1. Add CORS Policy (Frontend එකට අවසර දීම)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
         builder => builder
-            .AllowAnyOrigin()  // ඕනෑම තැනක ඉඳන් එන්න දෙන්න
-            .AllowAnyMethod()  // ඕනෑම දෙයක් කරන්න දෙන්න (GET, POST)
-            .AllowAnyHeader()); // ඕනෑම විස්තරයක් එවන්න දෙන්න
+            .AllowAnyOrigin()  
+            .AllowAnyMethod()  
+            .AllowAnyHeader()); 
 });
 
-// Controllers පාවිච්චි කරන්න (අපි හදන API වලට)
-builder.Services.AddControllers();
+// Controllers 
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+});
 
-// Swagger (API Testing Interface) එක සඳහා
+// Swagger (API Testing Interface) 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Database Connection එක
+// Database Connection 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.IncludeErrorDetails = true;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection("JwtSettings:Key").Value!)),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+    });
+
 var app = builder.Build();
 
-// --- 2. Configure Pipeline (Pipeline එක සැකසීම) ---
 
-// Development කාලෙදි Swagger පෙන්නන්න
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-// 2. Use CORS (මේක අනිවාර්යයෙන් දාන්න)
+
 app.UseCors("AllowAll");
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
-// අපේ Controllers (AuthController වගේ ඒවා) වැඩ කරවන්න
 app.MapControllers();
 
 app.Run();

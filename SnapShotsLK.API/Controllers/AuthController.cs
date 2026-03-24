@@ -23,17 +23,17 @@ namespace SnapShotsLK.API.Controllers
             _configuration = configuration;
         }
 
-        // 1. REGISTER (ලියාපදිංචි වීම)
+        
         [HttpPost("register")]
         public IActionResult Register(UserRegisterDto request)
         {
-            // Email එක කලින් තියෙනවද බලනවා
+         
             if (_context.Users.Any(u => u.Email == request.Email))
             {
                 return BadRequest("User already exists.");
             }
 
-            // Password එක Hash කරනවා (ආරක්ෂිත කරනවා)
+            
             string passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
             var newUser = new User
@@ -49,30 +49,72 @@ namespace SnapShotsLK.API.Controllers
             return Ok("User Registered Successfully!");
         }
 
-        // 2. LOGIN (ඇතුල් වීම)
+        [HttpPost("register-professional")]
+        public IActionResult RegisterProfessional(RegisterProfessionalDto request)
+        {
+            if (_context.Users.Any(u => u.Email == request.Email))
+            {
+                return BadRequest(new { message = "User already exists with this email." });
+            }
+
+            string passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+
+            var newUser = new User
+            {
+                Name = request.Name,
+                Email = request.Email,
+                Phone = request.Phone,
+                Location = request.Location,
+                PasswordHash = passwordHash,
+                Role = string.IsNullOrEmpty(request.Role) ? "admin" : request.Role,
+                ServiceType = request.ServiceType,
+                BusinessName = request.BusinessName
+            };
+
+            _context.Users.Add(newUser);
+            _context.SaveChanges();
+
+            string token = CreateToken(newUser);
+
+            return Ok(new
+            {
+                token = token,
+                user = new
+                {
+                    id = newUser.UserId,
+                    name = newUser.Name,
+                    email = newUser.Email,
+                    role = newUser.Role,
+                    phone = newUser.Phone,
+                    location = newUser.Location
+                }
+            });
+        }
+
+        
         [HttpPost("login")]
         public IActionResult Login(UserLoginDto request)
         {
-            // User ව Database එකෙන් හොයනවා
+           
             var user = _context.Users.FirstOrDefault(u => u.Email == request.Email);
             if (user == null)
             {
                 return BadRequest("User not found.");
             }
 
-            // Password එක ගැලපෙනවද බලනවා
+           
             if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             {
                 return BadRequest("Wrong password.");
             }
 
-            // හරි නම් Token එකක් හදනවා
+            
             string token = CreateToken(user);
 
             return Ok(token);
         }
 
-        // මේකෙන් තමයි Token එක හදන්නේ (Private Method)
+        
         private string CreateToken(User user)
         {
             List<Claim> claims = new List<Claim>
