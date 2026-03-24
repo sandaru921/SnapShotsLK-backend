@@ -23,5 +23,7 @@ namespace SnapShotsLK.API.Models
         public string? Location { get; set; }
         public string? ServiceType { get; set; }
         public string? BusinessName { get; set; }
+
+        public ProfessionalProfile? ProfessionalProfile { get; set; }
     }
 }

@@ -11,5 +11,8 @@ namespace SnapShotsLK.API.Data
 
         
         public DbSet<User> Users { get; set; }
+        public DbSet<ProfessionalProfile> ProfessionalProfiles { get; set; }
+        public DbSet<ServicePackage> ServicePackages { get; set; }
+        public DbSet<Review> Reviews { get; set; }
     }
 }
