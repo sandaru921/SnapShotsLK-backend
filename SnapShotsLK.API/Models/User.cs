@@ -13,9 +13,18 @@ namespace SnapShotsLK.API.Models
 
         [Required]
         public string PasswordHash { get; set; } = string.Empty; 
-       
 
         public string Role { get; set; } = "Client"; // Default role is Client
+
+        // Approval workflow
+        public bool IsApproved { get; set; } = true; // Client users are auto-approved; admin set to false on register
+        public string? RejectionReason { get; set; }
+
+        // Proof document fields (for admin registration)
+        public string? NicNumber { get; set; }
+        public string? NicDocumentUrl { get; set; }      // Google Drive / hosted link
+        public string? BusinessCertUrl { get; set; }     // Google Drive / hosted link
+        public string? PortfolioUrl { get; set; }        // Portfolio link
 
         // Professional fields
         public string? Name { get; set; }

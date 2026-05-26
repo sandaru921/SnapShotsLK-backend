@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using SnapShotsLK.API.Data;
+using SnapShotsLK.API.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -47,6 +47,38 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 var app = builder.Build();
 
+// ─────────────────────────────────────────────────────────
+//  Seed SuperAdmin on startup (only once, if not exists)
+// ─────────────────────────────────────────────────────────
+try
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate(); // Apply any pending migrations
+
+    const string superAdminEmail = "superadmin@snapshotslk.com";
+    if (!db.Users.Any(u => u.Role == "superadmin"))
+    {
+        db.Users.Add(new User
+        {
+            Email = superAdminEmail,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("SuperAdmin@123"),
+            Role = "superadmin",
+            Name = "Super Admin",
+            IsApproved = true
+        });
+        db.SaveChanges();
+        Console.WriteLine("╔══════════════════════════════════════════╗");
+        Console.WriteLine("║        SUPERADMIN ACCOUNT CREATED        ║");
+        Console.WriteLine($"║  Email:    {superAdminEmail,-30}║");
+        Console.WriteLine("║  Password: SuperAdmin@123                ║");
+        Console.WriteLine("╚══════════════════════════════════════════╝");
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"[WARN] Migration/Seed skipped: {ex.Message}");
+}
 
 if (app.Environment.IsDevelopment())
 {

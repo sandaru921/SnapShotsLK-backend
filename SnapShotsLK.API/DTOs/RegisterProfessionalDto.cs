@@ -21,11 +21,22 @@ namespace SnapShotsLK.API.DTOs
         [MinLength(6)]
         public string Password { get; set; } = string.Empty;
 
-        public string Role { get; set; } = "admin";
+        public string Role { get; set; } = "pending_admin";
 
         [Required]
         public string ServiceType { get; set; } = string.Empty;
 
         public string BusinessName { get; set; } = string.Empty;
+
+        // Proof documents (URLs / links)
+        [Required]
+        public string NicNumber { get; set; } = string.Empty;
+
+        [Required]
+        public string NicDocumentUrl { get; set; } = string.Empty;
+
+        public string? BusinessCertUrl { get; set; }
+
+        public string? PortfolioUrl { get; set; }
     }
 }
