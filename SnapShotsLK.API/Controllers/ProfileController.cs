@@ -121,7 +121,12 @@ namespace SnapShotsLK.API.Controllers
         {
             var users = await _context.Users
                 .Include(u => u.ProfessionalProfile)
-                .Where(u => u.ServiceType != null && u.ServiceType.ToLower() == serviceType.ToLower())
+                .Where(u =>
+                    u.IsApproved &&
+                    u.ServiceType != null &&
+                    u.ServiceType.ToLower() == serviceType.ToLower() &&
+                    u.ProfessionalProfile != null)
+                .OrderByDescending(u => u.ProfessionalProfile!.Rating)
                 .Select(u => new
                 {
                     id = u.UserId,
@@ -129,7 +134,7 @@ namespace SnapShotsLK.API.Controllers
                     businessName = u.BusinessName,
                     location = u.Location,
                     serviceType = u.ServiceType,
-                    profile = u.ProfessionalProfile != null ? new
+                    profile = new
                     {
                         bio = u.ProfessionalProfile!.Bio,
                         avatarUrl = u.ProfessionalProfile!.AvatarUrl,
@@ -137,7 +142,8 @@ namespace SnapShotsLK.API.Controllers
                         rating = u.ProfessionalProfile!.Rating,
                         reviewCount = u.ProfessionalProfile!.ReviewCount,
                         experience = u.ProfessionalProfile!.Experience,
-                    } : null
+                        specialties = u.ProfessionalProfile!.Specialties,
+                    }
                 })
                 .ToListAsync();
 
