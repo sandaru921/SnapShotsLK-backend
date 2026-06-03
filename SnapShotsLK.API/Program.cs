@@ -3,6 +3,7 @@ using SnapShotsLK.API.Data;
 using SnapShotsLK.API.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using SnapShotsLK.API.Hubs;
 using System.Text;
 using System.Text.Json.Serialization;
 
@@ -12,9 +13,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
         builder => builder
-            .AllowAnyOrigin()  
+            .WithOrigins("http://localhost:3000", "http://127.0.0.1:3000")
             .AllowAnyMethod()  
-            .AllowAnyHeader()); 
+            .AllowAnyHeader()
+            .AllowCredentials()); 
 });
 
 // Controllers 
@@ -26,6 +28,9 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 // Swagger (API Testing Interface) 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// SignalR
+builder.Services.AddSignalR();
 
 // Database Connection 
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -42,6 +47,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection("JwtSettings:Key").Value!)),
             ValidateIssuer = false,
             ValidateAudience = false
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/chathub"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -94,5 +112,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<ChatHub>("/chathub");
 
 app.Run();
