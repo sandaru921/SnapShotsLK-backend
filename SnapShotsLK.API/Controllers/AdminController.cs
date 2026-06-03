@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SnapShotsLK.API.Data;
 using SnapShotsLK.API.DTOs;
+using SnapShotsLK.API.Models;
 
 namespace SnapShotsLK.API.Controllers
 {
@@ -91,6 +92,28 @@ namespace SnapShotsLK.API.Controllers
                 user.Role = "admin";
                 user.IsApproved = true;
                 user.RejectionReason = null;
+
+                // Auto-create an empty ProfessionalProfile if one doesn't exist yet.
+                // This ensures the user is immediately visible in public listings.
+                var existingProfile = await _context.ProfessionalProfiles
+                    .FirstOrDefaultAsync(p => p.UserId == user.UserId);
+                if (existingProfile == null)
+                {
+                    _context.ProfessionalProfiles.Add(new ProfessionalProfile
+                    {
+                        UserId = user.UserId,
+                        Bio = $"{user.BusinessName ?? user.Name ?? "Professional"} — {user.ServiceType} based in {user.Location ?? "Sri Lanka"}.",
+                        Experience = "",
+                        About = "",
+                        ResponseTime = "Within 24 hours",
+                        Availability = "Available",
+                        Specialties = new List<string>(),
+                        PortfolioUrls = new List<string>(),
+                        Languages = new List<string> { "Sinhala", "English" },
+                        Achievements = new List<string>(),
+                    });
+                }
+
                 await _context.SaveChangesAsync();
                 return Ok(new { message = $"{user.Name ?? user.Email} has been approved as an admin." });
             }

@@ -123,10 +123,10 @@ namespace SnapShotsLK.API.Controllers
                 .Include(u => u.ProfessionalProfile)
                 .Where(u =>
                     u.IsApproved &&
+                    u.Role == "admin" &&
                     u.ServiceType != null &&
-                    u.ServiceType.ToLower() == serviceType.ToLower() &&
-                    u.ProfessionalProfile != null)
-                .OrderByDescending(u => u.ProfessionalProfile!.Rating)
+                    u.ServiceType.ToLower() == serviceType.ToLower())
+                .OrderByDescending(u => u.ProfessionalProfile != null ? u.ProfessionalProfile.Rating : 0)
                 .Select(u => new
                 {
                     id = u.UserId,
@@ -134,15 +134,15 @@ namespace SnapShotsLK.API.Controllers
                     businessName = u.BusinessName,
                     location = u.Location,
                     serviceType = u.ServiceType,
-                    profile = new
+                    profile = u.ProfessionalProfile == null ? null : new
                     {
-                        bio = u.ProfessionalProfile!.Bio,
-                        avatarUrl = u.ProfessionalProfile!.AvatarUrl,
-                        coverImageUrl = u.ProfessionalProfile!.CoverImageUrl,
-                        rating = u.ProfessionalProfile!.Rating,
-                        reviewCount = u.ProfessionalProfile!.ReviewCount,
-                        experience = u.ProfessionalProfile!.Experience,
-                        specialties = u.ProfessionalProfile!.Specialties,
+                        bio = u.ProfessionalProfile.Bio,
+                        avatarUrl = u.ProfessionalProfile.AvatarUrl,
+                        coverImageUrl = u.ProfessionalProfile.CoverImageUrl,
+                        rating = u.ProfessionalProfile.Rating,
+                        reviewCount = u.ProfessionalProfile.ReviewCount,
+                        experience = u.ProfessionalProfile.Experience,
+                        specialties = u.ProfessionalProfile.Specialties,
                     }
                 })
                 .ToListAsync();
@@ -155,9 +155,9 @@ namespace SnapShotsLK.API.Controllers
         {
             var user = await _context.Users
                 .Include(u => u.ProfessionalProfile)
-                .ThenInclude(p => p.Packages)
+                    .ThenInclude(p => p!.Packages)
                 .Include(u => u.ProfessionalProfile)
-                .ThenInclude(p => p.Reviews)
+                    .ThenInclude(p => p!.Reviews)
                 .FirstOrDefaultAsync(u => u.UserId == userId);
 
             if (user == null) return NotFound("Professional user not found");
