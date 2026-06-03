@@ -33,6 +33,11 @@ namespace SnapShotsLK.API.Models
         public string? ServiceType { get; set; }
         public string? BusinessName { get; set; }
 
+        // Geolocation (set when user saves their location)
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+
+
         public ProfessionalProfile? ProfessionalProfile { get; set; }
     }
 }

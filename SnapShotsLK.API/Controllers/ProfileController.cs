@@ -134,6 +134,8 @@ namespace SnapShotsLK.API.Controllers
                     businessName = u.BusinessName,
                     location = u.Location,
                     serviceType = u.ServiceType,
+                    latitude = u.Latitude,
+                    longitude = u.Longitude,
                     profile = u.ProfessionalProfile == null ? null : new
                     {
                         bio = u.ProfessionalProfile.Bio,
@@ -148,6 +150,70 @@ namespace SnapShotsLK.API.Controllers
                 .ToListAsync();
 
             return Ok(users);
+        }
+
+        // GET /api/profile/public/nearby?serviceType=photographer&lat=6.9&lng=79.8
+        // Returns professionals sorted by distance (Haversine, done in memory after query)
+        [HttpGet("public/nearby")]
+        public async Task<IActionResult> GetNearbyProfiles([FromQuery] string serviceType, [FromQuery] double? lat, [FromQuery] double? lng, [FromQuery] double radius = 300)
+        {
+            var users = await _context.Users
+                .Include(u => u.ProfessionalProfile)
+                .Where(u =>
+                    u.IsApproved &&
+                    u.Role == "admin" &&
+                    u.ServiceType != null &&
+                    u.ServiceType.ToLower() == serviceType.ToLower())
+                .Select(u => new
+                {
+                    id = u.UserId,
+                    name = u.Name ?? u.Email,
+                    businessName = u.BusinessName,
+                    location = u.Location,
+                    serviceType = u.ServiceType,
+                    latitude = u.Latitude,
+                    longitude = u.Longitude,
+                    profile = u.ProfessionalProfile == null ? null : new
+                    {
+                        bio = u.ProfessionalProfile.Bio,
+                        avatarUrl = u.ProfessionalProfile.AvatarUrl,
+                        coverImageUrl = u.ProfessionalProfile.CoverImageUrl,
+                        rating = u.ProfessionalProfile.Rating,
+                        reviewCount = u.ProfessionalProfile.ReviewCount,
+                        experience = u.ProfessionalProfile.Experience,
+                        specialties = u.ProfessionalProfile.Specialties,
+                    }
+                })
+                .ToListAsync();
+
+            // If caller provided coordinates, sort by distance using Haversine
+            if (lat.HasValue && lng.HasValue)
+            {
+                var withDistance = users.Select(u => new
+                {
+                    u.id, u.name, u.businessName, u.location, u.serviceType,
+                    u.latitude, u.longitude, u.profile,
+                    distanceKm = (u.latitude.HasValue && u.longitude.HasValue)
+                        ? Haversine(lat.Value, lng.Value, u.latitude.Value, u.longitude.Value)
+                        : (double?)null
+                })
+                .OrderBy(u => u.distanceKm ?? double.MaxValue)
+                .ToList();
+                return Ok(withDistance);
+            }
+
+            return Ok(users);
+        }
+
+        private static double Haversine(double lat1, double lon1, double lat2, double lon2)
+        {
+            const double R = 6371; // Earth radius in km
+            var dLat = (lat2 - lat1) * Math.PI / 180.0;
+            var dLon = (lon2 - lon1) * Math.PI / 180.0;
+            var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2)
+                  + Math.Cos(lat1 * Math.PI / 180) * Math.Cos(lat2 * Math.PI / 180)
+                  * Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+            return R * 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
         }
 
         [HttpGet("public/{userId}")]
@@ -173,6 +239,8 @@ namespace SnapShotsLK.API.Controllers
                 rating = user.ProfessionalProfile?.Rating ?? 5.0,
                 reviewCount = user.ProfessionalProfile?.ReviewCount ?? 0,
                 location = user.Location ?? "",
+                latitude = user.Latitude,
+                longitude = user.Longitude,
                 experience = user.ProfessionalProfile?.Experience ?? "",
                 specialty = user.ProfessionalProfile?.Specialties ?? new List<string>(),
                 about = user.ProfessionalProfile?.About ?? "",

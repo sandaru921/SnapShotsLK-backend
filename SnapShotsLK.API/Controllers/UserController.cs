@@ -39,6 +39,8 @@ namespace SnapShotsLK.API.Controllers
                 email = user.Email,
                 phone = user.Phone,
                 location = user.Location,
+                latitude = user.Latitude,
+                longitude = user.Longitude,
                 role = user.Role,
                 serviceType = user.ServiceType,
                 businessName = user.BusinessName,
@@ -46,16 +48,18 @@ namespace SnapShotsLK.API.Controllers
         }
 
         // ── PATCH /api/user/me
-        // Updates name, phone, location for the logged-in user
+        // Updates name, phone, location, and optionally lat/lng for the logged-in user
         [HttpPatch("me")]
         public async Task<IActionResult> UpdateMe([FromBody] UpdateUserDto dto)
         {
             var user = GetCurrentUser();
             if (user == null) return Unauthorized();
 
-            if (!string.IsNullOrWhiteSpace(dto.Name))    user.Name = dto.Name.Trim();
-            if (!string.IsNullOrWhiteSpace(dto.Phone))   user.Phone = dto.Phone.Trim();
+            if (!string.IsNullOrWhiteSpace(dto.Name))     user.Name = dto.Name.Trim();
+            if (!string.IsNullOrWhiteSpace(dto.Phone))    user.Phone = dto.Phone.Trim();
             if (!string.IsNullOrWhiteSpace(dto.Location)) user.Location = dto.Location.Trim();
+            if (dto.Latitude.HasValue)  user.Latitude = dto.Latitude;
+            if (dto.Longitude.HasValue) user.Longitude = dto.Longitude;
 
             await _context.SaveChangesAsync();
 
@@ -65,6 +69,8 @@ namespace SnapShotsLK.API.Controllers
                 name = user.Name,
                 phone = user.Phone,
                 location = user.Location,
+                latitude = user.Latitude,
+                longitude = user.Longitude,
             });
         }
     }
@@ -74,5 +80,8 @@ namespace SnapShotsLK.API.Controllers
         public string? Name { get; set; }
         public string? Phone { get; set; }
         public string? Location { get; set; }
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
     }
+
 }
